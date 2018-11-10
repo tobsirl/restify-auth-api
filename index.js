@@ -13,6 +13,7 @@ server.use(restify.plugins.bodyParser());
 
 // Server
 server.listen(port, () => {
+  mongoose.set('useFindAndModify', false);
   mongoose.connect(
     process.env.mongoDB,
     { useNewUrlParser: true }
