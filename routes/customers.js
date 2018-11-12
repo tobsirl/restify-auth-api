@@ -1,5 +1,7 @@
 const errors = require('restify-errors');
 const Customer = require('../models/Customer');
+const rjwt = require('restify-jwt-community');
+require('dotenv').config();
 
 module.exports = server => {
   // @route   GET /customers
@@ -36,28 +38,34 @@ module.exports = server => {
   // @route   POST /customers
   // @desc    Create all customers
   // @access  Public
-  server.post('/customers', async (req, res, next) => {
-    // Check for json
-    if (!req.is('application/json')) {
-      return next(new errors.InvalidContentError("Expects 'application/json'"));
+  server.post(
+    '/customers',
+    rjwt({ secret: process.env.secret }),
+    async (req, res, next) => {
+      // Check for json
+      if (!req.is('application/json')) {
+        return next(
+          new errors.InvalidContentError("Expects 'application/json'")
+        );
+      }
+
+      const { name, email, balance } = req.body;
+
+      const customer = new Customer({
+        name,
+        email,
+        balance
+      });
+
+      try {
+        const newCustomer = await customer.save();
+        res.send(201);
+        next();
+      } catch (err) {
+        return next(new errors.InternalError(err.message));
+      }
     }
-
-    const { name, email, balance } = req.body;
-
-    const customer = new Customer({
-      name,
-      email,
-      balance
-    });
-
-    try {
-      const newCustomer = await customer.save();
-      res.send(201);
-      next();
-    } catch (err) {
-      return next(new errors.InternalError(err.message));
-    }
-  });
+  );
 
   // @route   PUT /customers
   // @desc    Update an existing customer
